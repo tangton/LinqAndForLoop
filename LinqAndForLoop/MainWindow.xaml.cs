@@ -14,7 +14,8 @@ namespace LinqAndForLoop
     /// </summary>
     public partial class MainWindow : Window
     {
-        private const int CollectionListSize = 1000000;
+        private const int CollectionListSize = 50;
+        private const int RunLoopCount = 1000000;
         private CancellationTokenSource _tokenSource = new CancellationTokenSource();
 
         public MainWindow()
@@ -31,6 +32,23 @@ namespace LinqAndForLoop
             btnRun.IsEnabled = true;
         }
 
+        private List<Account> GenerateAccounts()
+        {
+            var accounts = new List<Account>();
+
+            var random = new Random();
+            for (var i = 0; i < CollectionListSize; i++)
+            {
+                accounts.Add(new Account
+                {
+                    Name = "Savings",
+                    Number = random.Next(10000, 99999)
+                });
+            }
+
+            return accounts;
+        }
+
         private async void btnRun_Click(object sender, RoutedEventArgs e)
         {
             _tokenSource = new CancellationTokenSource();
@@ -39,20 +57,14 @@ namespace LinqAndForLoop
             btnRun.Visibility = Visibility.Collapsed;
             btnRun.IsEnabled = false;
 
-            var randomIntList = new List<int>();
+            var accounts = GenerateAccounts();
 
-            var random = new Random();
-            for (var i = 0; i < CollectionListSize; i++)
-            {
-                randomIntList.Add(random.Next(1000));
-            }
-
-            lblListGenerated.Content = "Generated list: " + String.Join(", ", randomIntList);
+            lblListGenerated.Content = "Generated list: " + String.Join(", ", accounts);
 
             var taskList = new List<Task>();
 
-            var taskLinq = PrepareAndRunFind(LinqFind, randomIntList, pbLinq, lblResultLinq, _tokenSource.Token);
-            var taskFor = PrepareAndRunFind(ForLoopFind, randomIntList, pbFor, lblResultFor, _tokenSource.Token);
+            var taskLinq = PrepareAndRunFind(LinqSearchManyTimes, accounts, pbLinq, lblResultLinq, _tokenSource.Token);
+            var taskFor = PrepareAndRunFind(ForLoopSearchManyTimes, accounts, pbFor, lblResultFor, _tokenSource.Token);
 
             taskList.Add(taskLinq);
             taskList.Add(taskFor);
@@ -64,14 +76,14 @@ namespace LinqAndForLoop
             btnRun.IsEnabled = true;
         }
 
-        private async Task PrepareAndRunFind(Func<List<int>, int> findFunc, List<int> list, ProgressBar progressBar, Label labelResult, CancellationToken cancellationToken)
+        private async Task PrepareAndRunFind(Func<List<Account>, Account> findFunc, List<Account> list, ProgressBar progressBar, Label labelResult, CancellationToken cancellationToken)
         {
             labelResult.Content = "Pending...";
             progressBar.Value = 0;
             progressBar.Maximum = CollectionListSize;
 
             progressBar.IsIndeterminate = true;
-            var task = Task.Factory.StartNew(() => RunFind(findFunc, list), cancellationToken);
+            var task = Task.Factory.StartNew(() => RunSearch(findFunc, list), cancellationToken);
 
             var failed = false;
             var cancelled = false;
@@ -112,43 +124,96 @@ namespace LinqAndForLoop
             }
         }
 
-        private static TimeSpan RunFind(Func<List<int>, int> findFunc, List<int> listToSort)
+        private static TimeSpan RunSearch(Func<List<Account>, Account> findFunc, List<Account> listToSearch)
         {
             var stopWatch = new Stopwatch();
             stopWatch.Start();
 
-            var item = findFunc(listToSort);
+            var item = findFunc(listToSearch);
 
             stopWatch.Stop();
 
             return stopWatch.Elapsed;
         }
 
-        private int LinqFind(List<int> list)
+        private Account LinqSearchManyTimes(List<Account> list)
         {
-            var result = 0;
-            for (var i = 0; i < 1000000; i++)
+            for (var i = 0; i < RunLoopCount; i++)
             {
-                result = list.FirstOrDefault(x => x.Equals(1));
+                LinqSearch(list, "Name", 10100);
             }
-            return result;
+
+            return null;
         }
 
-        private int ForLoopFind(List<int> list)
+        private Account ForLoopSearchManyTimes(List<Account> list)
         {
-            var result = 0;
-            for (var i = 0; i < 1000000; i++)
+            for (var i = 0; i < RunLoopCount; i++)
             {
-                foreach (var item in list)
+                ForLoopSearch(list, "Name", 10100);
+            }
+
+            return null;
+        }
+
+
+        private Account LinqSearch(List<Account> list, string name, int number)
+        {
+            return list.FirstOrDefault(x => x.Name == name && x.Number == number);
+        }
+
+        private Account LinqSearchBreakDown(List<Account> list, string name, int number)
+        {
+            Func<Account, bool> predicate = x => x.Name == name && x.Number == number;
+            return list.FirstOrDefault(predicate);
+        }
+
+        private class Lambda1Environment
+        {
+            public string CapturedName;
+            public int CapturedNumber;
+            public bool Evaluate(Account account)
+            {
+                return account.Name == this.CapturedName && account.Number == this.CapturedNumber;
+            }
+        }
+
+        private Account LinqSearchBreakDown2(List<Account> list, string name, int number)
+        {
+            var l = new Lambda1Environment() { CapturedName = name, CapturedNumber = number };
+            var predicate = new Func<Account, bool>(l.Evaluate);
+
+            return list.FirstOrDefault(predicate);
+        }
+
+        private Account LinqSearchBreakDown3(List<Account> list, string name, int number)
+        {
+            var l = new Lambda1Environment() { CapturedName = name, CapturedNumber = number };
+            var predicate = new Func<Account, bool>(l.Evaluate);
+
+            IEnumerable<Account> enumerable = list;
+            IEnumerator<Account> enumerator = enumerable.GetEnumerator();
+            while (enumerator.MoveNext())
+            {
+                if (predicate(enumerator.Current))
                 {
-                    if (item == 1)
-                    {
-                        result = item;
-                        break;
-                    }
+                    return enumerator.Current;
                 }
             }
-            return result;
+            return default(Account);
+        }
+
+        private Account ForLoopSearch(List<Account> list, string name, int number)
+        {
+            foreach (var item in list)
+            {
+                if (item.Name == name && item.Number == number)
+                {
+                    return item;
+                }
+            }
+
+            return default(Account); 
         }
     }
 }

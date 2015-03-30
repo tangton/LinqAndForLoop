@@ -21,7 +21,7 @@
                         <Label x:Name="lblResultLinq" Margin="125, 0, 0, 0">Idle.</Label>
                     </StackPanel>
                     <DockPanel Margin="0, 10">
-                        <Label Width="120" DockPanel.Dock="Left">Bubble Sort:</Label>
+                        <Label Width="120" DockPanel.Dock="Left">For Loop:</Label>
                         <ProgressBar x:Name="pbFor" Margin="10, 0"></ProgressBar>
                     </DockPanel>
                     <StackPanel>
