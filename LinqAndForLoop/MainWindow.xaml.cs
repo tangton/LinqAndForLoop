@@ -16,20 +16,10 @@ namespace LinqAndForLoop
     {
         private const int CollectionListSize = 50;
         private const int RunLoopCount = 1000000;
-        private CancellationTokenSource _tokenSource = new CancellationTokenSource();
 
         public MainWindow()
         {
             InitializeComponent();
-        }
-
-        private void btnCancel_Click(object sender, RoutedEventArgs e)
-        {
-            _tokenSource.Cancel();
-
-            btnCancel.Visibility = Visibility.Collapsed;
-            btnRun.Visibility = Visibility.Visible;
-            btnRun.IsEnabled = true;
         }
 
         private List<Account> GenerateAccounts()
@@ -51,39 +41,31 @@ namespace LinqAndForLoop
 
         private async void btnRun_Click(object sender, RoutedEventArgs e)
         {
-            _tokenSource = new CancellationTokenSource();
-
-            btnCancel.Visibility = Visibility.Visible;
-            btnRun.Visibility = Visibility.Collapsed;
             btnRun.IsEnabled = false;
 
             var accounts = GenerateAccounts();
 
-            lblListGenerated.Content = "Generated list: " + String.Join(", ", accounts);
-
             var taskList = new List<Task>();
 
-            var taskLinq = PrepareAndRunFind(LinqSearchManyTimes, accounts, pbLinq, lblResultLinq, _tokenSource.Token);
-            var taskFor = PrepareAndRunFind(ForLoopSearchManyTimes, accounts, pbFor, lblResultFor, _tokenSource.Token);
+            var taskLinq = PrepareAndRunFind(LinqSearchManyTimes, accounts, pbLinq, lblResultLinq);
+            var taskFor = PrepareAndRunFind(ForLoopSearchManyTimes, accounts, pbFor, lblResultFor);
 
             taskList.Add(taskLinq);
             taskList.Add(taskFor);
 
             await Task.WhenAll(taskList);
 
-            btnCancel.Visibility = Visibility.Collapsed;
-            btnRun.Visibility = Visibility.Visible;
             btnRun.IsEnabled = true;
         }
 
-        private async Task PrepareAndRunFind(Func<List<Account>, Account> findFunc, List<Account> list, ProgressBar progressBar, Label labelResult, CancellationToken cancellationToken)
+        private async Task PrepareAndRunFind(Func<List<Account>, Account> findFunc, List<Account> list, ProgressBar progressBar, Label labelResult)
         {
             labelResult.Content = "Pending...";
             progressBar.Value = 0;
             progressBar.Maximum = CollectionListSize;
 
             progressBar.IsIndeterminate = true;
-            var task = Task.Factory.StartNew(() => RunSearch(findFunc, list), cancellationToken);
+            var task = Task.Factory.StartNew(() => RunSearch(findFunc, list));
 
             var failed = false;
             var cancelled = false;
@@ -110,7 +92,7 @@ namespace LinqAndForLoop
             if (cancelled)
             {
                 progressBar.Value = 0;
-                labelResult.Content = "Sort cancelled.";
+                labelResult.Content = "Search cancelled.";
             }
             else if (!failed)
             {
@@ -155,7 +137,6 @@ namespace LinqAndForLoop
 
             return null;
         }
-
 
         private Account LinqSearch(List<Account> list, string name, int number)
         {
