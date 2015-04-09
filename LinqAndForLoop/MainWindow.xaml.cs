@@ -68,7 +68,6 @@ namespace LinqAndForLoop
             var task = Task.Factory.StartNew(() => RunSearch(findFunc, list));
 
             var failed = false;
-            var cancelled = false;
             var message = string.Empty;
 
             var durationOfSort = new TimeSpan();
@@ -79,22 +78,13 @@ namespace LinqAndForLoop
 
                 durationOfSort = task.Result;
             }
-            catch (OperationCanceledException)
-            {
-                cancelled = true;
-            }
             catch (Exception ex)
             {
                 failed = true;
                 message = ex.Message;
             }
 
-            if (cancelled)
-            {
-                progressBar.Value = 0;
-                labelResult.Content = "Search cancelled.";
-            }
-            else if (!failed)
+            if (!failed)
             {
                 progressBar.IsIndeterminate = false;
                 progressBar.Value = CollectionListSize;
