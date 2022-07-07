@@ -1,11 +1,7 @@
-﻿using System;
+﻿using LinqAndForLoop.Library.Services;
 using System.Collections.Generic;
-using System.Diagnostics;
-using System.Linq;
-using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
-using System.Windows.Controls;
 
 namespace LinqAndForLoop
 {
@@ -14,177 +10,32 @@ namespace LinqAndForLoop
     /// </summary>
     public partial class MainWindow : Window
     {
-        private const int CollectionListSize = 50;
-        private const int RunLoopCount = 1000000;
+        private readonly int ListSize = 500;
+
+        private IGenerateAccountsService _generateAccountsService = new GenerateAccountsService();
 
         public MainWindow()
         {
             InitializeComponent();
         }
 
-        private List<Account> GenerateAccounts()
-        {
-            var accounts = new List<Account>();
-
-            var random = new Random();
-            for (var i = 0; i < CollectionListSize; i++)
-            {
-                accounts.Add(new Account
-                {
-                    Name = "Savings",
-                    Number = random.Next(10000, 99999)
-                });
-            }
-
-            return accounts;
-        }
-
         private async void btnRun_Click(object sender, RoutedEventArgs e)
         {
             btnRun.IsEnabled = false;
 
-            var accounts = GenerateAccounts();
+            var accountsList = _generateAccountsService.GenerateAccounts(ListSize);
 
             var taskList = new List<Task>();
 
-            var taskLinq = PrepareAndRunFind(LinqSearchManyTimes, accounts, pbLinq, lblResultLinq);
-            var taskFor = PrepareAndRunFind(ForLoopSearchManyTimes, accounts, pbFor, lblResultFor);
+            var taskLinq = ucLinq.Run(new LinqSearchService(), accountsList);
+            var taskForLoop = ucForLoop.Run(new ForLoopSearchService(), accountsList);
 
             taskList.Add(taskLinq);
-            taskList.Add(taskFor);
+            taskList.Add(taskForLoop);
 
             await Task.WhenAll(taskList);
 
             btnRun.IsEnabled = true;
-        }
-
-        private async Task PrepareAndRunFind(Func<List<Account>, Account> findFunc, List<Account> list, ProgressBar progressBar, Label labelResult)
-        {
-            labelResult.Content = "Pending...";
-            progressBar.Value = 0;
-            progressBar.Maximum = CollectionListSize;
-
-            progressBar.IsIndeterminate = true;
-            var task = Task.Factory.StartNew(() => RunSearch(findFunc, list));
-
-            var failed = false;
-            var message = string.Empty;
-
-            var durationOfSort = new TimeSpan();
-
-            try
-            {
-                await task;
-
-                durationOfSort = task.Result;
-            }
-            catch (Exception ex)
-            {
-                failed = true;
-                message = ex.Message;
-            }
-
-            if (!failed)
-            {
-                progressBar.IsIndeterminate = false;
-                progressBar.Value = CollectionListSize;
-                labelResult.Content = "Done. Time taken: " + durationOfSort;
-            }
-            else
-            {
-                labelResult.Content = "Sort failed. Message: " + message;
-            }
-        }
-
-        private static TimeSpan RunSearch(Func<List<Account>, Account> findFunc, List<Account> listToSearch)
-        {
-            var stopWatch = new Stopwatch();
-            stopWatch.Start();
-
-            var item = findFunc(listToSearch);
-
-            stopWatch.Stop();
-
-            return stopWatch.Elapsed;
-        }
-
-        private Account LinqSearchManyTimes(List<Account> list)
-        {
-            for (var i = 0; i < RunLoopCount; i++)
-            {
-                LinqSearch(list, "Name", 10100);
-            }
-
-            return null;
-        }
-
-        private Account ForLoopSearchManyTimes(List<Account> list)
-        {
-            for (var i = 0; i < RunLoopCount; i++)
-            {
-                ForLoopSearch(list, "Name", 10100);
-            }
-
-            return null;
-        }
-
-        private Account LinqSearch(List<Account> list, string name, int number)
-        {
-            return list.FirstOrDefault(x => x.Name == name && x.Number == number);
-        }
-
-        private Account LinqSearchBreakDown(List<Account> list, string name, int number)
-        {
-            Func<Account, bool> predicate = x => x.Name == name && x.Number == number;
-            return list.FirstOrDefault(predicate);
-        }
-
-        private class Lambda1Environment
-        {
-            public string CapturedName;
-            public int CapturedNumber;
-            public bool Evaluate(Account account)
-            {
-                return account.Name == this.CapturedName && account.Number == this.CapturedNumber;
-            }
-        }
-
-        private Account LinqSearchBreakDown2(List<Account> list, string name, int number)
-        {
-            var l = new Lambda1Environment() { CapturedName = name, CapturedNumber = number };
-            var predicate = new Func<Account, bool>(l.Evaluate);
-
-            return list.FirstOrDefault(predicate);
-        }
-
-        private Account LinqSearchBreakDown3(List<Account> list, string name, int number)
-        {
-            var l = new Lambda1Environment() { CapturedName = name, CapturedNumber = number };
-            var predicate = new Func<Account, bool>(l.Evaluate);
-
-            IEnumerable<Account> enumerable = list;
-            IEnumerator<Account> enumerator = enumerable.GetEnumerator();
-            while (enumerator.MoveNext())
-            {
-                if (predicate(enumerator.Current))
-                {
-                    return enumerator.Current;
-                }
-            }
-            return default(Account);
-        }
-
-        private Account ForLoopSearch(List<Account> list, string name, int number)
-        {
-            foreach (var item in list)
-            {
-                if (item.Name == name && item.Number == number)
-                {
-                    return item;
-                }
-            }
-
-            return default(Account); 
         }
     }
 }

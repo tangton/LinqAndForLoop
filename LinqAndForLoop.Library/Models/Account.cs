@@ -1,4 +1,4 @@
-﻿namespace LinqAndForLoop
+﻿namespace LinqAndForLoop.Library.Models
 {
     public class Account
     {
