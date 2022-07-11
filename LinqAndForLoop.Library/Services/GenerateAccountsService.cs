@@ -9,12 +9,12 @@ namespace LinqAndForLoop.Library.Services
 {
     public interface IGenerateAccountsService
     {
-        IList<Account> GenerateAccounts(int numberOfAccounts);
+        IEnumerable<Account> GenerateAccounts(int numberOfAccounts);
     }
 
     public class GenerateAccountsService : IGenerateAccountsService
     {
-        public IList<Account> GenerateAccounts(int numberOfAccounts)
+        public IEnumerable<Account> GenerateAccounts(int numberOfAccounts)
         {
             var accounts = new List<Account>();
 

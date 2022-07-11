@@ -8,7 +8,7 @@ namespace LinqAndForLoop.Library.Services
 {
     public class LinqSearchService : ISearchService
     {
-        public Account GetFirstMatch(IList<Account> list, string name, int number)
+        public Account GetFirstMatch(IEnumerable<Account> list, string name, int number)
         {
             Func<Account, bool> predicate = x => x.Name == name && x.Number == number;
             return list.FirstOrDefault(predicate);

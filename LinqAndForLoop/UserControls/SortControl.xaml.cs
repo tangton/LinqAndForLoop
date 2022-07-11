@@ -3,6 +3,7 @@ using LinqAndForLoop.Library.Services;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
@@ -28,11 +29,11 @@ namespace LinqAndForLoop.UserControls
             this.DataContext = this;
         }
 
-        public async Task Run(ISearchService searchService, IList<Account> list)
+        public async Task Run(ISearchService searchService, IEnumerable<Account> list)
         {
             lblResult.Content = "Pending...";
             pbStatus.Value = 0;
-            pbStatus.Maximum = list.Count;
+            pbStatus.Maximum = list.Count();
 
             pbStatus.IsIndeterminate = true;
             var task = Task.Factory.StartNew(() =>
@@ -70,7 +71,7 @@ namespace LinqAndForLoop.UserControls
             if (!failed)
             {
                 pbStatus.IsIndeterminate = false;
-                pbStatus.Value = list.Count;
+                pbStatus.Value = list.Count();
                 lblResult.Content = "Done. Time taken: " + durationOfSort;
             }
             else

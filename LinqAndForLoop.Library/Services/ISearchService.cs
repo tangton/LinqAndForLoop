@@ -5,6 +5,6 @@ namespace LinqAndForLoop.Library.Services
 {
     public interface ISearchService
     {
-        Account GetFirstMatch(IList<Account> list, string name, int number);
+        Account GetFirstMatch(IEnumerable<Account> list, string name, int number);
     }
 }
